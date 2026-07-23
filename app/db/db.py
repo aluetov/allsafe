@@ -12,9 +12,11 @@ DATABASE_URL = URL.create(
     username=os.environ.get("DB_USER"),
     password=os.environ.get("DB_PASSWORD"),
     host=os.environ.get("DB_HOST"),
-    port=int(os.environ.get("DB_PORT")),
+    port=os.environ.get("DB_PORT"),
     database=os.environ.get("DB_NAME")
 )
+
+print(DATABASE_URL)
 
 engine = create_async_engine(
     DATABASE_URL, 

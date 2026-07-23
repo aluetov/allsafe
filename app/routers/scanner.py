@@ -4,8 +4,8 @@ import dns.rdatatype
 import dns.rdataclass
 import dns.asyncresolver
 import dns.resolver
-from db import models
-from db.db import Session
+from ..db.models import Domain
+from ..db.db import Session
 
 router = APIRouter()
 
@@ -42,7 +42,7 @@ async def scan_dns(request: DomainRequest):
         "records": [record.to_text() for record in answer_for_A]
     }
 
-    domain = models.Domain(
+    domain = Domain(
         qname=answer_dict['qname'], canonical_name=answer_dict['canonical_name'],
         record_type=answer_dict['record_type'], record_class=answer_dict['record_class'], 
         expiration=answer_dict['expiration'], records=answer_dict['records']

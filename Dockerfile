@@ -1,5 +1,5 @@
 FROM python:3.14-slim
-WORKDIR /app
+WORKDIR /allsafe
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .

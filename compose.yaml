@@ -16,7 +16,6 @@ services:
     ports:
       - '${DB_HOST_PORT}:${DB_PORT}'
 
-
   app:
     build: .
     ports:
@@ -25,8 +24,9 @@ services:
       db:
         restart: true
         condition: service_healthy
+    env_file:
+      - .env
 
 volumes:
   db-data:
     name: 'postgres'
-      
