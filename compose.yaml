@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:18.4
+    container_name: allsafe_postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 1m30s
@@ -16,17 +17,31 @@ services:
     ports:
       - '${DB_HOST_PORT}:${DB_PORT}'
 
+  redis:
+    container_name: allsafe_redis
+    image: redis:8.8.1-alpine
+    ports:
+      - '${REDIS_HOST_PORT}:${REDIS_PORT}'
+    volumes:
+      - redis-data:/data
+
   app:
+    container_name: allsafe_app
     build: .
     ports:
-      - '${ALLSAFE_HOST_PORT}:${ALLSAFE_CONTAINER_PORT}'
+      - '${ALLSAFE_HOST_PORT}:${ALLSAFE_PORT}'
     depends_on:
       db:
         restart: true
         condition: service_healthy
+      redis:
+        condition: service_started
     env_file:
       - .env
 
 volumes:
+  redis-data:
+    name: 'redis'
+
   db-data:
     name: 'postgres'

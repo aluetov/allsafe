@@ -16,7 +16,6 @@ DATABASE_URL = URL.create(
     database=os.environ.get("DB_NAME")
 )
 
-print(DATABASE_URL)
 
 engine = create_async_engine(
     DATABASE_URL, 
