@@ -7,8 +7,6 @@ from .redis.redis import redis
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     await create_tables()
-    await redis.ping()
-    print("Redis connected")
 
     yield
 
