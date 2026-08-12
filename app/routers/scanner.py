@@ -1,16 +1,18 @@
 import json
+from typing import Annotated
 
 import dns.asyncresolver
 import dns.rdataclass
 import dns.rdatatype
 import dns.resolver
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from redis.asyncio import Redis
 from sqlalchemy import select
 
 from ..db.db import Session
 from ..db.models import Domain
-from ..redis.redis import redis
+from ..redis.redis import get_redis
 
 router = APIRouter()
 
@@ -25,7 +27,7 @@ class DomainRequest(BaseModel):
 
 
 @router.post("/scan")
-async def scan_dns(request: DomainRequest):
+async def scan_dns(request: DomainRequest, redis: Annotated[Redis, Depends(get_redis)]):
     # check whether dns exists in redis
     cached_key = f"dns:{request.domain}"
     cached_response = await redis.get(cached_key)
@@ -77,7 +79,7 @@ async def scan_dns(request: DomainRequest):
 
 
 @router.get("/check/{domain}")
-async def check_domain(domain: str):
+async def check_domain(domain: str, redis: Annotated[Redis, Depends(get_redis)]):
     cache_key = f"dns:{domain}"
     cached_response = await redis.get(cache_key)
     if cached_response is not None:
