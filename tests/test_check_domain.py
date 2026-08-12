@@ -18,13 +18,12 @@ async def test_check_domain_redis_hit(monkeypatch):
         "records": ["93.184.216.34"],
     }
 
-    redis_get = AsyncMock(return_value=json.dumps(cached_data))
-    redis_ttl = AsyncMock(return_value=250)
+    redis = MagicMock()
 
-    monkeypatch.setattr(scanner.redis, "get", redis_get)
-    monkeypatch.setattr(scanner.redis, "ttl", redis_ttl)
+    redis.get = AsyncMock(return_value=json.dumps(cached_data))
+    redis.ttl = AsyncMock(return_value=250)
 
-    response = await scanner.check_domain("example.com")
+    response = await scanner.check_domain("example.com", redis)
 
     assert response == {
         "source": "redis",
@@ -32,16 +31,12 @@ async def test_check_domain_redis_hit(monkeypatch):
         "cached_response": cached_data,
     }
 
+
 @pytest.mark.asyncio
 async def test_check_domain_postgres_hit(monkeypatch):
-    monkeypatch.setattr(
-        scanner.redis,
-        "get",
-        AsyncMock(return_value=None),
-    )
-
-    redis_set = AsyncMock()
-    monkeypatch.setattr(scanner.redis, "set", redis_set)
+    redis = MagicMock()
+    redis.get = AsyncMock(return_value=None)
+    redis.set = AsyncMock()
 
     db_domain = MagicMock()
     db_domain.qname = "example.com."
@@ -69,7 +64,7 @@ async def test_check_domain_postgres_hit(monkeypatch):
 
     monkeypatch.setattr(scanner, "Session", session_factory)
 
-    response = await scanner.check_domain("example.com")
+    response = await scanner.check_domain("example.com", redis)
 
     expected_data = {
         "qname": "example.com.",
@@ -85,19 +80,17 @@ async def test_check_domain_postgres_hit(monkeypatch):
         "data": expected_data,
     }
 
-    redis_set.assert_awaited_once_with(
+    redis.set.assert_awaited_once_with(
         "dns:example.com",
         json.dumps(expected_data),
         ex=300,
     )
 
+
 @pytest.mark.asyncio
 async def test_check_domain_not_found(monkeypatch):
-    monkeypatch.setattr(
-        scanner.redis,
-        "get",
-        AsyncMock(return_value=None),
-    )
+    redis = MagicMock()
+    redis.get = AsyncMock(return_value=None)
 
     scalar_result = MagicMock()
     scalar_result.first.return_value = None
@@ -118,7 +111,7 @@ async def test_check_domain_not_found(monkeypatch):
     monkeypatch.setattr(scanner, "Session", session_factory)
 
     with pytest.raises(HTTPException) as exc_info:
-        await scanner.check_domain("missing.com")
+        await scanner.check_domain("missing.com", redis)
 
     assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "Domain not found"
