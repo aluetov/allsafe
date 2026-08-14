@@ -1,10 +1,14 @@
 # AllSafe
 
+[![CI](https://github.com/aluetov/allsafe/actions/workflows/ci.yml/badge.svg)](https://github.com/aluetov/allsafe/actions/workflows/ci.yml)
+
 AllSafe is a containerized passive DNS reconnaissance API built with FastAPI.
 
 The application accepts a domain name, resolves its DNS `A` records, caches results in Redis, and stores scan history in PostgreSQL. nginx acts as the only externally exposed entry point.
 
-The main purpose of this project is to demonstrate containerization, service networking, persistence, caching, reverse proxying, health checks, multi-stage builds, and non-root container execution.
+The project demonstrates production-style container infrastructure and a security-gated CI/CD pipeline, including service isolation, caching, persistence, health checks, multi-stage builds, non-root execution, automated testing, static analysis, secret scanning, container vulnerability scanning, and publishing validated Docker images to GitHub Container Registry.
+
+> If the GitHub Actions workflow file is not named `ci.yml`, update the badge URL above to use the actual workflow filename.
 
 ## Current Features
 
@@ -21,8 +25,21 @@ The main purpose of this project is to demonstrate containerization, service net
 - Multi-stage Docker image
 - Non-root application container
 - Environment-based configuration
+- GitHub Actions CI/CD
+- Ruff linting and formatting checks
+- pytest automated tests
+- Bandit static application security testing
+- Gitleaks secret scanning
+- Docker image vulnerability scanning with Trivy
+- Security-gated image publication
+- GitHub Container Registry publishing
+- Commit-SHA Docker image tags
+- Exact scanned-artifact promotion between CI jobs
+- Least-privilege GitHub Actions permissions
 
-TLS certificate inspection and HTTP security-header grading are planned for a later application version. The current Phase 1 implementation focuses on DNS scanning and production-style container infrastructure.
+TLS certificate inspection and HTTP security-header grading are planned for a later application version.
+
+The current application focuses on DNS reconnaissance, while the infrastructure and CI/CD layers provide container isolation, automated testing, security scanning, and controlled image publication.
 
 ## Architecture
 
@@ -43,6 +60,73 @@ flowchart LR
 Only nginx publishes a port to the host.
 
 The FastAPI application, PostgreSQL, and Redis are accessible only through Docker networks.
+
+## CI/CD Architecture
+
+Pull requests targeting `main` pass through automated quality and security checks before they can be merged.
+
+```mermaid
+flowchart TD
+    Change[Push or Pull Request] --> Ruff[Ruff]
+    Change --> Tests[pytest]
+    Change --> Bandit[Bandit SAST]
+    Change --> Gitleaks[Gitleaks]
+    Change --> Build[Build Docker image]
+
+    Build --> Trivy[Trivy vulnerability scan]
+    Trivy --> Save[Save scanned image]
+    Save --> Artifact[GitHub Actions artifact]
+
+    Ruff --> Gate[CI security gate]
+    Tests --> Gate
+    Bandit --> Gate
+    Gitleaks --> Gate
+    Trivy --> Gate
+
+    Gate -->|Pull request| Stop[Do not publish]
+    Gate -->|Push to main| Publish[Publish scanned artifact]
+
+    Artifact --> Publish
+    Publish --> GHCR[GitHub Container Registry]
+```
+
+The pipeline covers several layers:
+
+```text
+Ruff
+  ↓
+Code quality and formatting
+
+pytest
+  ↓
+Application behavior
+
+Bandit
+  ↓
+Python static security analysis
+
+Gitleaks
+  ↓
+Secret detection
+
+Docker build
+  ↓
+Production container image
+
+Trivy
+  ↓
+OS and application dependency vulnerability scanning
+
+GHCR
+  ↓
+Validated container image publication
+```
+
+Pull requests are built, tested, and scanned but are not published.
+
+After a change is merged into `main`, the workflow runs again for the resulting push to `main`.
+
+If all required jobs succeed, the exact Docker image that passed Trivy is published to GitHub Container Registry.
 
 ## Request Flow
 
@@ -90,6 +174,13 @@ If the result is not cached, the application reads the latest matching record fr
 | Migrations | Alembic |
 | Containerization | Docker |
 | Orchestration | Docker Compose |
+| CI/CD | GitHub Actions |
+| Linting / formatting | Ruff |
+| Testing | pytest |
+| SAST | Bandit |
+| Secret scanning | Gitleaks |
+| Container vulnerability scanning | Trivy |
+| Container registry | GitHub Container Registry |
 
 ## Project Structure
 
@@ -97,6 +188,9 @@ If the result is not cached, the application reads the latest matching record fr
 .
 ├── .dockerignore
 ├── .env.example
+├── .github
+│   └── workflows
+│       └── ci.yml
 ├── .gitignore
 ├── Dockerfile
 ├── README.md
@@ -122,8 +216,12 @@ If the result is not cached, the application reads the latest matching record fr
 ├── compose.yaml
 ├── nginx
 │   └── default.conf
-└── requirements.txt
+├── requirements-dev.txt
+├── requirements.txt
+└── tests
 ```
+
+Adjust the workflow filename in this tree if the repository uses a name other than `ci.yml`.
 
 ## Requirements
 
@@ -140,7 +238,7 @@ No local Python installation is required to run the containerized stack.
 Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/aluetov/allsafe.git
 cd allsafe
 ```
 
@@ -508,6 +606,214 @@ docker compose exec app id
 
 Running as a non-root user follows the principle of least privilege and limits the effect of an application compromise.
 
+## CI Pipeline
+
+The GitHub Actions workflow runs on:
+
+```text
+pull request → main
+push → main
+```
+
+The following jobs run independently:
+
+### Ruff
+
+Ruff checks Python code quality and formatting.
+
+```bash
+ruff check .
+ruff format --check .
+```
+
+### pytest
+
+pytest runs the automated test suite.
+
+```bash
+pytest -v
+```
+
+### Bandit
+
+Bandit performs static application security testing against the Python application source.
+
+```bash
+bandit -r app
+```
+
+### Gitleaks
+
+Gitleaks scans the repository and Git history for accidentally committed credentials and secrets.
+
+The checkout step fetches the complete Git history so historical commits can also be analyzed.
+
+### Trivy
+
+The workflow builds the production Docker image and scans it with Trivy.
+
+The scan includes:
+
+```text
+OS packages
++
+application libraries
+```
+
+The current security gate focuses on fixable `CRITICAL` vulnerabilities.
+
+A fixable critical vulnerability causes Trivy to exit with a non-zero status, which fails the GitHub Actions job.
+
+The image is not published unless the required CI jobs succeed.
+
+## Container Image Publishing
+
+Validated application images are published to GitHub Container Registry.
+
+Image format:
+
+```text
+ghcr.io/aluetov/allsafe:<commit-sha>
+```
+
+For example:
+
+```text
+ghcr.io/aluetov/allsafe:0123456789abcdef...
+```
+
+Each published image is tagged with the Git commit SHA associated with the workflow run.
+
+This provides traceability:
+
+```text
+Git commit
+    ↓
+GitHub Actions workflow
+    ↓
+Docker image
+    ↓
+GHCR package
+```
+
+An available image can be pulled with:
+
+```bash
+docker pull ghcr.io/aluetov/allsafe:<commit-sha>
+```
+
+Private packages require authentication before pulling.
+
+## Exact Artifact Promotion
+
+The pipeline follows a build-once model.
+
+```text
+Docker build
+     ↓
+Docker image
+     ↓
+Trivy scan
+     ↓
+docker save
+     ↓
+allsafe-image.tar
+     ↓
+GitHub Actions artifact storage
+     ↓
+publish job
+     ↓
+docker load
+     ↓
+docker push
+     ↓
+GHCR
+```
+
+The publish job does not rebuild the application image.
+
+After Trivy successfully scans the image, `docker save` serializes that image into an archive:
+
+```bash
+docker save ghcr.io/aluetov/allsafe:<sha> -o allsafe-image.tar
+```
+
+The archive is uploaded to GitHub Actions artifact storage.
+
+The publishing job downloads that artifact and restores the Docker image:
+
+```bash
+docker load -i allsafe-image.tar
+```
+
+The restored image is then pushed directly to GHCR.
+
+This ensures that the image published to the registry is the same artifact that passed vulnerability scanning.
+
+## Publishing Policy
+
+Pull requests are never published as official container images.
+
+For a pull request:
+
+```text
+PR → main
+   ↓
+Ruff
+pytest
+Bandit
+Gitleaks
+Docker build
+Trivy
+   ↓
+validation only
+   ↓
+no GHCR publication
+```
+
+After the pull request is merged:
+
+```text
+merge into main
+      ↓
+push event on main
+      ↓
+CI runs again
+      ↓
+all required checks succeed
+      ↓
+publish job
+      ↓
+GHCR
+```
+
+This prevents unmerged feature branches from publishing official application images.
+
+## GitHub Actions Permissions
+
+The workflow follows the principle of least privilege.
+
+Most jobs use:
+
+```yaml
+permissions:
+  contents: read
+```
+
+They only need to read the repository.
+
+The publishing job receives:
+
+```yaml
+permissions:
+  contents: read
+  packages: write
+```
+
+`packages: write` is required to publish the validated image to GitHub Container Registry.
+
+Publishing privileges are therefore limited to the job that actually needs them.
+
 ## Security Decisions
 
 ### Only nginx is exposed
@@ -533,6 +839,50 @@ Uvicorn runs as a dedicated Linux service user.
 ### Backend network is internal
 
 PostgreSQL and Redis are isolated from direct external access.
+
+### Security-gated CI
+
+Changes targeting `main` are automatically checked with Ruff, pytest, Bandit, Gitleaks, and Trivy.
+
+Publishing depends on successful completion of the required CI jobs.
+
+### Static application security testing
+
+Bandit analyzes Python source code for potentially insecure programming patterns.
+
+### Secret scanning
+
+Gitleaks scans the repository for accidentally committed credentials and other secrets.
+
+The real `.env` remains excluded from Git.
+
+### Container vulnerability scanning
+
+Trivy scans the final application image for known vulnerabilities in operating-system packages and application libraries.
+
+The current CI policy blocks fixable `CRITICAL` vulnerabilities.
+
+Unfixed vulnerabilities are ignored by the blocking rule because there is no currently available remediation version.
+
+### Least-privilege CI permissions
+
+Most jobs receive read-only repository permissions.
+
+Only the publishing job receives permission to write packages to GHCR.
+
+### Exact artifact promotion
+
+The Docker image is built and scanned once.
+
+After Trivy succeeds, that image is transferred between jobs using a GitHub Actions artifact and published without rebuilding it.
+
+This reduces the possibility of differences between the scanned artifact and the published artifact.
+
+### Immutable action references
+
+Security-sensitive third-party GitHub Actions such as Trivy and the Docker registry login action are pinned to specific Git commit SHAs instead of movable version tags.
+
+This reduces exposure to changes in third-party action tags.
 
 ## Verification Commands
 
@@ -624,7 +974,7 @@ This proves that the PostgreSQL named volume preserved the scan history.
 A successful clean-clone test proves that the repository does not depend on hidden local files.
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/aluetov/allsafe.git
 cd allsafe
 cp .env.example .env
 docker compose up --build -d
@@ -684,35 +1034,56 @@ Stop the stack and delete volumes:
 docker compose down -v
 ```
 
-## Phase 1 Completion Criteria
+Pull a published image from GHCR:
 
-Phase 1 is complete when:
+```bash
+docker pull ghcr.io/aluetov/allsafe:<commit-sha>
+```
 
-- the stack starts with Docker Compose;
-- the health endpoint works through nginx;
-- DNS scans work inside the application container;
-- Redis returns cached results;
-- PostgreSQL preserves scan history;
-- only nginx exposes a host port;
-- health checks control dependency startup;
-- the application image uses multiple stages;
-- Uvicorn runs as a non-root user;
-- `.env` is excluded from Git and Docker;
-- a clean clone starts successfully.
+## Project Progress
 
-## Planned Next Phase
+### Phase 1 — Container Infrastructure ✅
 
-Phase 2 will add a security-gated CI pipeline using GitHub Actions.
+Completed:
 
-Planned checks:
+- multi-service Docker Compose stack;
+- nginx reverse proxy;
+- PostgreSQL persistence;
+- Redis cache-aside;
+- service health checks;
+- isolated Docker networks;
+- multi-stage application image;
+- non-root execution;
+- environment-based configuration;
+- clean-clone reproducibility.
 
-- Ruff linting
-- pytest
-- Bandit static analysis
-- Gitleaks secret scanning
-- Docker image build
-- Trivy vulnerability scanning
-- GitHub Container Registry publishing
+### Phase 2 — Security-Gated CI/CD ✅
+
+Completed:
+
+- Ruff linting and formatting;
+- pytest automated testing;
+- Bandit SAST;
+- Gitleaks secret scanning;
+- Docker image builds in CI;
+- Trivy vulnerability scanning;
+- blocking policy for fixable critical vulnerabilities;
+- commit-SHA image tagging;
+- exact scanned-artifact promotion;
+- GHCR authentication with `GITHUB_TOKEN`;
+- least-privilege package publishing;
+- container publication only from `main`.
+
+### Next Phase
+
+The next phase will focus on infrastructure provisioning and deployment:
+
+- Terraform;
+- remote infrastructure;
+- host hardening;
+- automated deployment;
+- HTTPS;
+- production configuration.
 
 ## Lessons Learned
 
@@ -727,7 +1098,18 @@ Planned checks:
 - Multi-stage builds separate build and runtime concerns.
 - Non-root execution applies the principle of least privilege.
 - `.gitignore` and `.dockerignore` solve different problems.
-- A clean-clone test is the best proof that setup instructions are complete.
+- A clean-clone test proves that setup does not depend on hidden local state.
+- GitHub Actions jobs run on isolated runners and do not automatically share files or Docker images.
+- GitHub Actions artifacts can transfer build artifacts between jobs.
+- Static analysis, secret scanning, testing, and container vulnerability scanning protect different layers of the software supply chain.
+- A vulnerability scanner and a CI security gate are different: the scanner reports findings while exit codes determine whether the pipeline fails.
+- Vulnerability severity alone is not always enough when defining policy; fix availability also matters.
+- `GITHUB_TOKEN` provides temporary workflow authentication and should receive only the permissions required by each job.
+- Pull requests should validate artifacts without publishing official images.
+- Commit-SHA image tags provide traceability between source code and container artifacts.
+- Building once and publishing the exact scanned artifact avoids differences between the tested and released image.
+- Third-party GitHub Actions are executable supply-chain dependencies and can be pinned to immutable Git commit SHAs.
+- CI validates changes before integration, while later pipeline stages can promote validated artifacts toward deployment.
 
 ## License
 
