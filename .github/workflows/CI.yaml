@@ -92,14 +92,59 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Build Docker image
-        run: docker build -t allsafe:${{ github.sha }} .
+        run: docker build -t ghcr.io/aluetov/allsafe:${{ github.sha }} .
 
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
         with:
-          image-ref: allsafe:${{ github.sha }}
+          image-ref: ghcr.io/aluetov/allsafe:${{ github.sha }}
           format: table
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: '1'
           vuln-type: os,library
+
+      - name: Save Docker image
+        run: docker save ghcr.io/aluetov/allsafe:${{ github.sha }} -o allsafe-image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: allsafe-image
+          path: allsafe-image.tar
+          retention-days: 1
+
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    needs:
+      - ruff
+      - pytest
+      - bandit
+      - gitleaks
+      - trivy
+    
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: allsafe-image
+    
+      - name: Load Docker image
+        run: docker load -i allsafe-image.tar
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish image to GHCR
+        run: docker push ghcr.io/aluetov/allsafe:${{ github.sha }}
