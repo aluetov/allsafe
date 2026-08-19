@@ -1,13 +1,15 @@
-import os
-
 from fastapi import Request
 from redis.asyncio import Redis
+
+from ..core.config import get_settings
+
+settings = get_settings()
 
 
 def create_redis() -> Redis:
     return Redis(
-        host=os.getenv("REDIS_HOST"),
-        port=int(os.getenv("REDIS_PORT")),
+        host=settings.redis_host,
+        port=settings.redis_port,
         decode_responses=True,
     )
 

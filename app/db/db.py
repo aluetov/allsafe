@@ -1,20 +1,19 @@
-import os
-
-from dotenv import load_dotenv
 from sqlalchemy import MetaData
 from sqlalchemy.engine import URL
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-load_dotenv()
+from ..core.config import get_settings
+
+settings = get_settings()
 
 DATABASE_URL = URL.create(
     drivername="postgresql+asyncpg",
-    username=os.environ.get("DB_USER"),
-    password=os.environ.get("DB_PASSWORD"),
-    host=os.environ.get("DB_HOST"),
-    port=os.environ.get("DB_PORT"),
-    database=os.environ.get("DB_NAME"),
+    username=settings.db_user,
+    password=settings.db_password,
+    host=settings.db_host,
+    port=settings.db_port,
+    database=settings.db_name,
 )
 
 
@@ -33,9 +32,3 @@ class Base(DeclarativeBase):
             "pk": "pk_%(table_name)s",
         }
     )
-
-
-async def create_tables():
-    async with engine.begin() as connection:
-        print(Base.metadata.tables.keys())
-        await connection.run_sync(Base.metadata.create_all)

@@ -53,6 +53,8 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy only the application code needed at runtime.
 COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
 
 # All following runtime commands execute as this user.
 USER allsafe
