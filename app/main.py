@@ -1,8 +1,6 @@
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-from fastapi import Depends, FastAPI
-from redis.asyncio import Redis
+from fastapi import FastAPI
 
 from .redis.redis import create_redis
 from .routers import scanner
