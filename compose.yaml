@@ -52,6 +52,7 @@ services:
       - backend
 
     volumes:
+      - ./app:/allsafe/app
       - ./alembic:/allsafe/alembic
       - ./alembic.ini:/allsafe/alembic.ini:ro
 

@@ -13,7 +13,16 @@ from app.schemas.user import UserCreate, UserResponse
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "description": "Username already exists",
+        }
+    },
+)
 async def register(user_create: UserCreate, session: Annotated[AsyncSession, Depends(get_session)]) -> User:
 
     stmt = select(User).where(User.username == user_create.username)

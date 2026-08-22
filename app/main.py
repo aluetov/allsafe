@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.redis.redis import create_redis
-from app.routers import scanner
+from app.routers import auth, scanner
 
 
 @asynccontextmanager
@@ -17,6 +17,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(scanner.router)
+app.include_router(auth.router)
 
 
 @app.get("/")
