@@ -1,11 +1,14 @@
+from collections.abc import AsyncGenerator
+
 from sqlalchemy import MetaData
 from sqlalchemy.engine import URL
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from ..core.config import get_settings
+from app.core.config import get_settings
 
 settings = get_settings()
+
 
 DATABASE_URL = URL.create(
     drivername="postgresql+asyncpg",
@@ -19,7 +22,13 @@ DATABASE_URL = URL.create(
 
 engine = create_async_engine(DATABASE_URL, echo=True)
 
+
 Session = async_sessionmaker(engine)
+
+
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
+    async with Session() as session:
+        yield session
 
 
 class Base(DeclarativeBase):

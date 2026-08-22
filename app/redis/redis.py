@@ -1,7 +1,7 @@
 from fastapi import Request
 from redis.asyncio import Redis
 
-from ..core.config import get_settings
+from app.core.config import get_settings
 
 settings = get_settings()
 

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
-from .db import Base
+from app.db.db import Base
 
 
 class Domain(Base):

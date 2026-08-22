@@ -2,8 +2,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from .redis.redis import create_redis
-from .routers import scanner
+from app.redis.redis import create_redis
+from app.routers import scanner
 
 
 @asynccontextmanager

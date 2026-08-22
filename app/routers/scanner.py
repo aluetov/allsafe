@@ -10,9 +10,9 @@ from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy import select
 
-from ..db.db import Session
-from ..db.models import Domain
-from ..redis.redis import get_redis
+from app.db.db import Session
+from app.db.models import Domain
+from app.redis.redis import get_redis
 
 router = APIRouter()
 
