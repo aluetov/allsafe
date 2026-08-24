@@ -15,7 +15,6 @@ class Settings(BaseSettings):
 
     signing_key: str
     algorithm: str
-    access_token_expire_time: str
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

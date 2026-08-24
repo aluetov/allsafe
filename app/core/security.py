@@ -29,3 +29,8 @@ def create_token(payload: dict, expires_delta: timedelta | None = None) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.signing_key, settings.algorithm)
 
     return encoded_jwt
+
+
+def decode_access_token(token: str) -> dict:
+    payload = jwt.decode(token, settings.signing_key, algorithms=[settings.algorithm])
+    return payload

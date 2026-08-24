@@ -37,7 +37,7 @@ async def register(user_create: UserCreate, session: Annotated[AsyncSession, Dep
 
     try:  # if two people insert the same username at the same time
         await session.commit()
-    except IntegrityError:
+    except IntegrityError:  # TODO: Handle only the username unique-constraint violation.
         await session.rollback()
 
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already exists") from None
