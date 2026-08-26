@@ -27,8 +27,10 @@ class Game(Base):
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
-    status: Mapped[GameStatus] = mapped_column(Enum(GameStatus, name="game_status"))
-    max_players: Mapped[int] = mapped_column(SMALLINT)
+    status: Mapped[GameStatus] = mapped_column(
+        Enum(GameStatus, name="game_status"), server_default=text("'WAITING'")
+    )
+    max_players: Mapped[int] = mapped_column(SMALLINT, server_default=text("5"))
     current_round_number: Mapped[int] = mapped_column(server_default=text("0"))
     winner_player_id: Mapped[UUID | None] = mapped_column(ForeignKey("game_players.id", use_alter=True))
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())
