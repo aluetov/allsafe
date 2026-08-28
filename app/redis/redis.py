@@ -1,12 +1,10 @@
 from fastapi import Request
 from redis.asyncio import Redis
 
-from app.core.config import get_settings
-
-settings = get_settings()
+from app.core.config import Settings
 
 
-def create_redis() -> Redis:
+def create_redis(settings: Settings) -> Redis:
     return Redis(
         host=settings.redis_host,
         port=settings.redis_port,
