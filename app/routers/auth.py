@@ -72,6 +72,6 @@ async def login(
 
     token = create_token(payload)
 
-    token_response = TokenResponse(access_token=token, token_type="bearer") # nosec B106
+    token_response = TokenResponse(access_token=token, token_type="bearer")  # nosec B106
 
     return token_response
