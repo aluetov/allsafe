@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/aluetov/allsafe/actions/workflows/ci.yml/badge.svg)](https://github.com/aluetov/allsafe/actions/workflows/ci.yml)
 
+# I dont fucking know what this project is about anymore, just have fun!!!3
+
 AllSafe is a containerized passive DNS reconnaissance API built with FastAPI.
 
 The application accepts a domain name, resolves its DNS `A` records, caches results in Redis, and stores scan history in PostgreSQL. nginx acts as the only externally exposed entry point.

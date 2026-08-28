@@ -1,26 +1,32 @@
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-from fastapi import Depends, FastAPI
-from redis.asyncio import Redis
+from fastapi import FastAPI
 
-from .db.db import create_tables
-from .redis.redis import create_redis, get_redis
-from .routers import scanner
+from app.core.config import get_settings
+from app.db.db import create_database_engine, create_session_factory
+from app.redis.redis import create_redis
+from app.routers import auth, user
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_tables()
+    settings = get_settings()
+    engine = create_database_engine()
+
+    app.state.settings = settings
+    app.state.session_factory = create_session_factory(engine)
     app.state.redis = create_redis()
 
-    yield
-
-    await app.state.redis.aclose()
+    try:
+        yield
+    finally:
+        await engine.dispose()
+        await app.state.redis.aclose()
 
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(scanner.router)
+app.include_router(auth.router)
+app.include_router(user.router)
 
 
 @app.get("/")
@@ -31,12 +37,3 @@ async def read_root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-
-
-@app.get("/redis")
-async def redis_test(redis: Annotated[Redis, Depends(get_redis)]):
-    await redis.set("hello", "world")
-
-    value = await redis.get("hello")
-
-    return {"value": value}

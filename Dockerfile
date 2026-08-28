@@ -53,10 +53,12 @@ COPY --from=builder /opt/venv /opt/venv
 
 # Copy only the application code needed at runtime.
 COPY app ./app
+COPY alembic ./alembic
+COPY alembic.ini ./alembic.ini
 
 # All following runtime commands execute as this user.
 USER allsafe
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

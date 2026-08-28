@@ -51,9 +51,17 @@ services:
       - frontend
       - backend
 
+    volumes:
+      - ./app:/allsafe/app
+      - ./alembic:/allsafe/alembic
+      - ./alembic.ini:/allsafe/alembic.ini:ro
+
   db:
     image: postgres:18.4
     container_name: allsafe_postgres
+
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT}:${DB_PORT}"
 
     environment:
       POSTGRES_USER: ${DB_USER}
@@ -76,6 +84,7 @@ services:
 
     networks:
       - backend
+      - db_admin
 
   redis:
     image: redis:8.8.1-alpine
@@ -101,6 +110,9 @@ networks:
   backend:
     driver: bridge
     internal: true
+  
+  db_admin:
+    driver: bridge
 
 volumes:
   redis-data:
