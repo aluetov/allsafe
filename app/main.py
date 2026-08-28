@@ -2,10 +2,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.redis.redis import create_redis
-from app.routers import auth, user
 from app.core.config import get_settings
 from app.db.db import create_database_engine, create_session_factory
+from app.redis.redis import create_redis
+from app.routers import auth, user
 
 
 @asynccontextmanager
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     app.state.redis = create_redis()
 
     try:
-       yield
+        yield
     finally:
         await engine.dispose()
         await app.state.redis.aclose()
