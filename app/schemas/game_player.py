@@ -13,5 +13,6 @@ class GamePlayerResponse(BaseModel):
     game_id: UUID
     user_id: UUID
     status: PlayerStatus
+    is_ready: bool
     eliminated_at: datetime | None
     joined_at: datetime

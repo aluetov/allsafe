@@ -12,7 +12,7 @@ from app.dependencies.auth import get_current_user
 from app.game.enum import GameStatus
 from app.schemas.game import GameCreate, GameListResponse, GameResponse
 from app.schemas.game_player import GamePlayerResponse
-from app.game.enum import PlayerStatus
+from app.game.enum import PlayerStatus, GameAccess
 
 router = APIRouter(prefix="/games")
 
@@ -23,7 +23,12 @@ async def create_game(
     current_user: Annotated[User, Depends(get_current_user)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Game:
-    game = Game(max_players=game_data.max_players)
+    game = Game(
+        game_type=GameAccess.PRIVATE,
+        min_players=game_data.min_players,
+        max_players=game_data.max_players,
+        owner_id=current_user.id,
+    )
     session.add(game)
 
     await session.flush()
@@ -135,7 +140,6 @@ async def join_game(
     player = GamePlayer(
         game_id=game.id,
         user_id=current_user.id,
-        status=PlayerStatus.ACTIVE,
     )
 
     session.add(player)
@@ -206,7 +210,7 @@ async def leave_game(
             detail="You are not a player in this game",
         )
 
-    await session.execute(delete(existing_player))
+    await session.delete(existing_player)
     await session.commit()
 
 

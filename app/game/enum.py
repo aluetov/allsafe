@@ -8,6 +8,11 @@ class GameStatus(str, Enum):
     CANCELLED = "cancelled"
 
 
+class GameAccess(str, Enum):
+    PUBLIC = "public"
+    PRIVATE = "private"
+
+
 class PlayerStatus(str, Enum):
     ACTIVE = "active"
     ELIMINATED = "eliminated"

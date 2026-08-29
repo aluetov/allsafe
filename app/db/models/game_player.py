@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, Enum, ForeignKey, UniqueConstraint, func, text
+from sqlalchemy import TIMESTAMP, Enum, ForeignKey, UniqueConstraint, func, text, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.db import Base
@@ -25,5 +25,6 @@ class GamePlayer(Base):
     status: Mapped[PlayerStatus] = mapped_column(
         Enum(PlayerStatus, name="player_status"), server_default=text("'ACTIVE'")
     )
+    is_ready: Mapped[bool] = mapped_column(server_default=false())
     eliminated_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     joined_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), server_default=func.now())

@@ -11,11 +11,11 @@ from app.routers import auth, user
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-    engine = create_database_engine()
+    engine = create_database_engine(settings)
 
     app.state.settings = settings
     app.state.session_factory = create_session_factory(engine)
-    app.state.redis = create_redis()
+    app.state.redis = create_redis(settings)
 
     try:
         yield
