@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import TIMESTAMP, Enum, ForeignKey, UniqueConstraint, func, text, false
+from sqlalchemy import TIMESTAMP, Enum, ForeignKey, UniqueConstraint, false, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.db import Base

@@ -1,10 +1,10 @@
 from datetime import datetime
-from uuid import UUID
 from typing import Self
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.game.enum import GameStatus, GameAccess
+from app.game.enum import GameAccess, GameStatus
 
 
 class GameCreate(BaseModel):
@@ -14,9 +14,7 @@ class GameCreate(BaseModel):
     @model_validator(mode="after")
     def validate_player_limits(self) -> Self:
         if self.min_players > self.max_players:
-            raise ValueError(
-                "min_players cannot be greater than max_players"
-            )
+            raise ValueError("min_players cannot be greater than max_players")
 
         return self
 

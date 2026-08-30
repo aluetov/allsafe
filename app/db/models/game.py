@@ -13,7 +13,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.db import Base
-from app.game.enum import GameStatus, GameAccess
+from app.game.enum import GameAccess, GameStatus
 
 
 class Game(Base):
