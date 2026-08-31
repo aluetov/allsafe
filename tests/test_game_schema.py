@@ -1,6 +1,6 @@
 import pytest
+
 from app.schemas.game import GameCreate
-from pydantic import ValidationError
 
 
 def test_game_create_uses_default_capacity() -> None:
